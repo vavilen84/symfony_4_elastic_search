@@ -4,17 +4,17 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Service\ElasticSearchService;
 use App\Form\SearchFormType;
 use Symfony\Component\HttpFoundation\Request;
 use App\Entity\Post;
+use App\Service\ElasticsearchService;
 
 class SiteController extends AbstractController
 {
     /**
      * @Route("/", name="index")
      */
-    public function index(ElasticSearchService $elasticSearchService, Request $request)
+    public function index(ElasticsearchService $elasticSearchService, Request $request)
     {
         $searchForm = $this->createForm(SearchFormType::class);
         $searchForm->handleRequest($request);

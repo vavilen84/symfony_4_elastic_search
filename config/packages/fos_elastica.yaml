@@ -1,0 +1,24 @@
+# Read the documentation: https://github.com/FriendsOfSymfony/FOSElasticaBundle/blob/master/Resources/doc/setup.md
+fos_elastica:
+    clients:
+        default: { host: elasticsearch, port: 9200 }
+    indexes:
+        app:
+          types:
+            post:
+              properties:
+                title: ~
+                content : ~
+                status: ~
+              persistence:
+                # the driver can be orm, mongodb or phpcr
+                driver: orm
+                model: App\Entity\Post
+                provider: ~
+                finder: ~
+services:
+  App\Service\ElasticsearchService:
+    arguments:
+      $transformedFinder: '@fos_elastica.finder.app.post'
+  FOS\ElasticaBundle\Finder\TransformedFinder:
+    alias: 'fos_elastica.finder.app.post'
