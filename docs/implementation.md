@@ -8,6 +8,7 @@ We will have one entity - Post. Generate entity with a command:
 ```
 $ docker exec -it --user 1000 symfony4sphinxsearch_php_1 bin/console make:entity
 ```
+
 Result
 ```php
 <?php
@@ -99,7 +100,7 @@ class SiteController extends AbstractController
 
 Here we have:
 - By default - search is not used
-- Search is used after Searchform is submited and is valid
+- Search is used after Search form is submitted and is valid
 
 Lets make form
 

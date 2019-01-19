@@ -1,18 +1,12 @@
 class_name: FunctionalTester
 modules:
     enabled:
-        - REST
         - Db
         - Asserts
-        - Symfony
+        - PhpBrowser
     config:
-        Symfony:
-            app_path: '../src'
-            environment: 'test'
-            url: 'http://site.symfony4sphinxsearch_local'
-        REST:
-            url: 'http://site.symfony4sphinxsearch_local'
-            depends: Symfony
+        PhpBrowser:
+            url: 'http://site.symfony_4_elastic_search_local'
         Db:
             depends: Symfony
             dsn: 'pgsql:host=postgres;dbname=symfony'

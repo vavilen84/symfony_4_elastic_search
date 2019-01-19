@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Functional;
+namespace App\Tests\Functional;
 
 use \FunctionalTester;
 use App\Tests\Functional\BaseFunctionalCest;
@@ -18,12 +18,13 @@ class SearchCest extends BaseFunctionalCest
     }
 
     /**
-     * by default (without submited search form) we see all posts (including INACTIVE) - search doesnt take part in this post query
+     * by default (without submitted search form) we see all posts (including INACTIVE) - search doesnt take part in this post query
      *
      * @param FunctionalTester $I
      */
     protected function seeAllPosts(FunctionalTester $I)
     {
+        $I->seeResponseCodeIs(200);
         $I->see(AppFixtures::POSTS[1]['title']);
         $I->see(AppFixtures::POSTS[2]['title']);
         $I->see(AppFixtures::POSTS[3]['title']);
