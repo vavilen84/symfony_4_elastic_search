@@ -1,6 +1,4 @@
-# Symfony 4.* + Sphinxsearch 3.11 integration
-
-Application is based on [this](https://github.com/vavilen84/symfony_4_basic_skeleton) skeleton but you can use yours instead.
+# Symfony 4.* + Elasticsearch 6.* integration
 
 ## Entity
 
@@ -55,7 +53,7 @@ class Post
 
 Generate controller with a command:
 ```
-$ docker exec -it --user 1000 symfony4sphinxsearch_php_1 bin/console make:controller
+$ docker exec -it --user 1000 symfony_4_elastic_search_php_1 bin/console make:controller
 ```
 
 Result
@@ -107,7 +105,7 @@ Lets make form
 ## Search Form
 
 ```
-$ docker exec -it --user 1000 symfony4sphinxsearch_php_1 bin/console make:form
+$ docker exec -it --user 1000 symfony_4_elastic_search_php_1 bin/console make:form
 ```
 
 Result 
@@ -145,64 +143,99 @@ class SearchFormType extends AbstractType
 
 ```
 
-## Sphinx
+## Elasticsearch
 
-### Sphinx client
+### FOSElasticaBundle
 
-Download latest release from here [link](http://sphinxsearch.com/downloads/current/)<br>
-Downloaded files includes official client - We just add a namespace to it (see src/Services/SphinxClient.php)
+[Bundle github](https://github.com/FriendsOfSymfony/FOSElasticaBundle)
 
-### Sphinx service
+Bundle provides:
+- user friendly config
+- index managing console commands
+- search query constructor
+
+
+### Elasticsearch service
 
 ```php
 <?php
 
 namespace App\Service;
 
-use App\Service\SphinxClient;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\PostRepository;
 use App\Entity\Post;
+use FOS\ElasticaBundle\Finder\TransformedFinder;
 
-class SphinxSearchService
+class ElasticsearchService
 {
-    /**
-     * @var SphinxClient $sphinx
-     */
-    private $sphinx;
-    private $host = 'sphinxsearch';
-    private $port = 9312;
-    private $indexes = ['post'];
+    /** @var  PostRepository */
+    protected $postRepository;
 
-    public function __construct(EntityManagerInterface $em)
+    /** @var TransformedFinder */
+    private $transformedFinder;
+
+    public function __construct(EntityManagerInterface $em, TransformedFinder $transformedFinder)
     {
         $this->postRepository = $em->getRepository(Post::class);
-        $this->sphinx = new SphinxClient();
-        $this->sphinx->setServer($this->host, $this->port);
+        $this->transformedFinder = $transformedFinder;
     }
 
-    public function getList(string $search): array
+    public function getList(string $query)
     {
-        $result = [];
-        $searchResult = $this->search($search);
-        if (!empty($searchResult['total']) && !empty($searchResult['matches'])) {
-            $result = $this->postRepository->findBy(['id' => array_keys($searchResult['matches'])]);
-        }
-
-        return $result;
-    }
-
-    public function search(string $query)
-    {
-        $results = $this->sphinx->query($query, implode(' ', $this->indexes));
-        if ($results['status'] !== SEARCHD_OK) {
-            $error = $this->sphinx->getLastError();
-
-            throw new \Exception($error);
-        }
+        $query = $this->buildQuery($query);
+        $results = $this->transformedFinder->find($query);
 
         return $results;
     }
+
+    protected function buildQuery(string $query)
+    {
+        $textQuery = new \Elastica\Query\MultiMatch();
+        $textQuery->setQuery($query);
+        $textQuery->setFields(['title', 'content']);
+
+        $statusQuery = new \Elastica\Query\Match();
+        $statusQuery->setFieldQuery('status', Post::STATUS_ACTIVE);
+
+        $result = new \Elastica\Query\BoolQuery();
+        $result->addMust($textQuery);
+        $result->addMust($statusQuery);
+
+        return $result;
+    }
 }
+```
+
+### Bundle config
+
+```yaml
+#config/fos_elastica.yaml
+
+# Read the documentation: https://github.com/FriendsOfSymfony/FOSElasticaBundle/blob/master/Resources/doc/setup.md
+fos_elastica:
+    clients:
+        default: { host: elasticsearch, port: 9200 }
+    indexes:
+        app:
+          types:
+            post:
+              properties:
+                title: ~
+                content : ~
+                status: ~
+              persistence:
+                # the driver can be orm, mongodb or phpcr
+                driver: orm
+                model: App\Entity\Post
+                provider: ~
+                finder: ~
+services:
+  App\Service\ElasticsearchService:
+    arguments:
+      $transformedFinder: '@fos_elastica.finder.app.post'
+  FOS\ElasticaBundle\Finder\TransformedFinder:
+    alias: 'fos_elastica.finder.app.post'
 
 ```
 
